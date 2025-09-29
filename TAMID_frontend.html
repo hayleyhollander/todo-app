@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Todo App</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #f4f4f4;
+      padding: 20px;
+    }
+    h1 {
+      color: #333;
+    }
+    #taskInput {
+      padding: 10px;
+      width: 250px;
+      margin-right: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    button {
+      padding: 10px 15px;
+      margin: 5px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      opacity: 0.9;
+    }
+    .add-btn {
+      background-color: #4CAF50;
+      color: white;
+    }
+    .complete-btn {
+      background-color: #2196F3;
+      color: white;
+    }
+    .delete-btn {
+      background-color: #f44336;
+      color: white;
+    }
+    .refresh-btn {
+      background-color: #ff9800;
+      color: white;
+    }
+    ul {
+      list-style-type: none;
+      padding: 0;
+      max-width: 400px;
+      margin: 20px auto;
+      text-align: left;
+    }
+    li {
+      background: #fff;
+      padding: 10px;
+      margin: 5px 0;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    li s {
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+  <h1>My Todo List</h1>
+
+  <div>
+    <input type="text" id="taskInput" placeholder="Enter a task">
+    <button class="add-btn" onclick="addTask()">Add Task</button>
+    <button class="refresh-btn" onclick="getTasks()">Refresh Tasks</button>
+  </div>
+
+  <h2>Tasks</h2>
+  <ul id="taskList"></ul>
+
+  <script>
+    const API_URL = "http://127.0.0.1:5000/tasks";
+    const taskList = document.getElementById("taskList");
+
+    // Fetch and display all tasks
+    async function getTasks() {
+      try {
+        const response = await fetch(API_URL);
+        const tasks = await response.json();
+
+        taskList.innerHTML = ""; // Clear the list
+        tasks.forEach(task => {
+          const li = document.createElement("li");
+          li.innerHTML = `
+            <span>${task.completed ? `<s>${task.description}</s>` : task.description}</span>
+            <div>
+              <button class="complete-btn" onclick="markComplete(${task.id}, ${!task.completed})">
+                ${task.completed ? "Undo" : "Complete"}
+              </button>
+              <button class="delete-btn" onclick="deleteTask(${task.id})">Delete</button>
+            </div>
+          `;
+          taskList.appendChild(li);
+        });
+      } catch (error) {
+        console.error("Error fetching tasks:", error);
+      }
+    }
+
+    // Add a new task
+    async function addTask() {
+      const taskInput = document.getElementById("taskInput");
+      const description = taskInput.value.trim();
+
+      if (!description) {
+        alert("Task cannot be empty!");
+        return;
+      }
+
+      try {
+        await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ description })
+        });
+        taskInput.value = ""; // Clear input
+        getTasks(); // Refresh task list
+      } catch (error) {
+        console.error("Error adding task:", error);
+      }
+    }
+
+    // Mark a task as complete or undo
+    async function markComplete(taskId, completedStatus) {
+      try {
+        await fetch(`${API_URL}/${taskId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ completed: completedStatus })
+        });
+        getTasks(); // Refresh task list
+      } catch (error) {
+        console.error("Error updating task:", error);
+      }
+    }
+
+    // Delete a task
+    async function deleteTask(taskId) {
+      try {
+        await fetch(`${API_URL}/${taskId}`, {
+          method: "DELETE"
+        });
+        getTasks(); // Refresh task list
+      } catch (error) {
+        console.error("Error deleting task:", error);
+      }
+    }
+
+    // Load all tasks when page loads
+    getTasks();
+  </script>
+</body>
+</html>
